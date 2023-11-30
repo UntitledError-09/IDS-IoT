@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IoT Surveillance System</title>
+</head>
+<body>
+    <h1>Motion Alert</h1>
+    <p>Alert ID: <span id="alert_id">{{ alert_id }}</span></p>
+    <video width="320" height="240" controls id="video_display">
+        <source src="{{ url_for('serve_video') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <p>Intrusion: <span id="intrusion_result">{{ intrusion_result }}</span></p>
+
+    <!-- User interaction options -->
+    <form id="user_interaction_form" action="/suppress-alert" method="post">
+        <input type="hidden" name="alert_id" id="alert_id_field" value="{{ alert_id }}">
+        <input type="radio" name="choice" value="suppress"> Suppress Alert
+        <input type="text" name="person_name" placeholder="Name">
+        <br>
+        <input type="radio" name="choice" value="message"> Send Message to User<br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

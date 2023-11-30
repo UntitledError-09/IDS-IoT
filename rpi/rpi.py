@@ -64,7 +64,6 @@ class ActivityLog(db.Model):
 with app.app_context():
     db.create_all()
 
-
 # helper functions
 
 received_data = {
@@ -73,16 +72,36 @@ received_data = {
     "intrusion_result": None
 }
 
+
 def on_message(client, userdata, message):
-    msg_payload = str(message.payload.decode("utf-8"))
-    message_parts = msg_payload.split(',')
-    print("Video URL :", message_parts[1])
-    global received_data
-    received_data["alert_id"] = message_parts[0]
-    received_data["video_url"] = message_parts[1]
-    received_data["intrusion_result"] = message_parts[2]
-    # Redirect to a Flask route to render the template with the data
-    redirect_to_render()
+    if message.topic == 'rpi_to_user':
+        msg_payload = str(message.payload.decode("utf-8"))
+        message_parts = msg_payload.split(',')
+        print("Video URL :", message_parts[1])
+        global received_data
+        received_data["alert_id"] = message_parts[0]
+        received_data["video_url"] = message_parts[1]
+        received_data["intrusion_result"] = message_parts[2]
+        # Redirect to a Flask route to render the template with the data
+        redirect_to_render()
+    elif message.topic == 'activity-detected':
+        data = message.payload
+
+        video = data.get('video')
+        timestamp = data.get('timestamp')
+        device_name = data.get('device_name')
+
+        # Save the video to the 'activity_vlogs' directory
+        activity_id = save_video(video, timestamp, device_name)
+
+        # perform intrusion detection and handle result
+        intrusion_detection(payload={
+            "video": video,
+            "timestamp": timestamp,
+            "device_name": device_name,
+            "activity_id": activity_id
+        })
+
 
 def redirect_to_render():
     # Perform a redirect to a Flask route where the template will be rendered
@@ -90,7 +109,7 @@ def redirect_to_render():
     pass  # Placeholder for redirecting logic
 
 
-def send_response_to_rpi( choice, person_name):
+def send_response_to_rpi(choice, person_name):
     rpi_endpoint = "http://rpi_ip_address:port/receive_response"
     data = {'choice': choice, 'person_name': person_name}
 
@@ -104,8 +123,9 @@ def send_response_to_rpi( choice, person_name):
         print("Error sending request to RPi:", e)
 
 
-def send_email(subject, body):
-    return requests.post(url=config['cloud_endpoint'] + "send-email", json={"subject": subject, "body": body})
+def send_email_and_update_cloud(subject, body, upload_payload):
+    requests.post(url=config['cloud_endpoint'] + "latest_activity", json=upload_payload)
+    return requests.post(url=config['cloud_endpoint'] + "send_email", json={"subject": subject, "body": body})
 
 
 def save_video(video, timestamp, device_name):
@@ -130,13 +150,14 @@ def save_video(video, timestamp, device_name):
 
     return activity_id
 
-async def intrusion_detection(payload: dict):
+
+def intrusion_detection(payload: dict):
     # TODO: Wifi-based detection
     wifi_check = 0.0
 
     connected_devices = get_connected_devices()
     check_registered_devices(connected_devices)
-    if(connected_devices.alarm_triggered) :
+    if connected_devices.alarm_triggered:
         wifi_check = 1.0
 
     # TODO: ML-based face/posture detection
@@ -154,9 +175,11 @@ async def intrusion_detection(payload: dict):
     activity_id = payload["activity_id"]
     if detection_result > 0.75:
         # publish detection result to user
-        client.publish(topic="test_topic", payload=payload, qos=2, retain=True)
-        send_email("Site Activity Alert",
-                   f"Possible intrusion detected at your site. {activity_id} at {activity_log.timestamp} with {activity_log.detection_result} certainty.")
+        client.publish(topic="rpi_to_user", payload=payload, qos=2, retain=True)
+        send_email_and_update_cloud("Site Activity Alert",
+                                    f"Possible intrusion detected at your site. {activity_id} at {activity_log.timestamp} with {activity_log.detection_result} certainty.",
+                                    payload)
+
 
 # config['topics']['rpi_to_user']
 
@@ -168,20 +191,12 @@ client.connect(broker_address)
 client.subscribe(topic)
 client.loop_start()
 
-# routes
-@app.route('/process_choice', methods=['POST'])
-def process_choice():
-    choice = request.form['choice']
-    person_name = request.form.get('person_name', '')
-    alert_id = request.form.get('alert_id') # Get person's name from the form
-    send_response_to_rpi( choice, person_name)
-    # Send user choice and person's name to RPi
-    print(choice, "chosen by : ", person_name)
-    return f"Alert Id: {alert_id}. Choice sent to RPi: {choice}. Suppressed by: {person_name}"
 
+# routes
 @app.route('/video/<path:filename>')
 def serve_video(filename):
     return send_from_directory('/Users/chetana/PycharmProjects/WID_IoT/', filename)
+
 
 @app.route('/render_template_route')
 def render_template_route():
@@ -190,10 +205,11 @@ def render_template_route():
                            video_url=received_data["video_url"],
                            intrusion_result=received_data["intrusion_result"])
 
+
 @app.post('/activity-detected')
 # handle POST from ESP32-CAM
 # request body: {video: base64.b64encode, timestamp: str, device_name: str}
-def activity_detected():
+def handle_activity_detected():
     data = request.json
 
     video = data.get('video')
@@ -204,14 +220,15 @@ def activity_detected():
     activity_id = save_video(video, timestamp, device_name)
 
     # asynchronously perform intrusion detection and handle result
-    asyncio.create_task(intrusion_detection(payload={
+    intrusion_detection(payload={
         "video": video,
         "timestamp": timestamp,
         "device_name": device_name,
         "activity_id": activity_id
-    }))
+    })
 
     return Response(f"{activity_id}", 201)
+
 
 @app.post('/suppress-alert')
 # handle POST from user
@@ -228,11 +245,7 @@ def suppress_alert():
         activity_log.suppressor_name = suppressor_name
         db.session.commit()
 
-    if activity_log.detection_result > 0.75:
-        send_email("Site Activity Alert",
-                   f"Possible intrusion detected at your site. {activity_id} at {activity_log.timestamp} with {activity_log.detection_result} certainty.")
-
-    return Response(f"{activity_id}", 201)
+    return Response("suppressed", 200)
 
 
 if __name__ == '__main__':
