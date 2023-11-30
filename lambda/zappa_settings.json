@@ -1,0 +1,10 @@
+{
+    "dev": {
+        "app_function": "server.app",
+        "profile_name": "csc591-iot-project-user",
+        "aws_region": "us-east-1",
+        "project_name": "csc591-iot-project",
+        "runtime": "python3.11",
+        "s3_bucket": "csc591-iot-project"
+    }
+}

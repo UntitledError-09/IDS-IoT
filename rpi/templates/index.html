@@ -1,0 +1,152 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>IoT Surveillance System</title>-->
+<!--    <style>-->
+<!--        body {-->
+<!--            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;-->
+<!--            background-color: #f9f9f9;-->
+<!--            margin: 0;-->
+<!--            padding: 20px;-->
+<!--            display: flex;-->
+<!--            justify-content: center;-->
+<!--            align-items: center;-->
+<!--            height: 100vh;-->
+<!--        }-->
+
+<!--        #container {-->
+<!--            border-radius: 8px;-->
+<!--            background-color: #fff;-->
+<!--            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);-->
+<!--            padding: 20px;-->
+<!--            width: 100%;-->
+<!--            max-width: 600px;-->
+<!--        }-->
+
+<!--        h1 {-->
+<!--            color: #333;-->
+<!--            margin-bottom: 20px;-->
+<!--            text-align: center;-->
+<!--            font-size: 28px;-->
+<!--        }-->
+
+<!--        #video_display {-->
+<!--            width: 100%;-->
+<!--            border-radius: 5px;-->
+<!--            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);-->
+<!--            background-color: #333;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        form {-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            align-items: center;-->
+<!--            background-color: #f5f5f5;-->
+<!--            padding: 20px;-->
+<!--            border-radius: 5px;-->
+<!--            border: 1px solid #ccc;-->
+<!--        }-->
+
+<!--        input[type="radio"] {-->
+<!--            display: none;-->
+<!--        }-->
+
+<!--        label {-->
+<!--            display: inline-block;-->
+<!--            padding: 12px 24px;-->
+<!--            margin: 10px;-->
+<!--            border-radius: 5px;-->
+<!--            cursor: pointer;-->
+<!--            font-weight: bold;-->
+<!--            color: #fff;-->
+<!--            transition: background-color 0.3s ease;-->
+<!--        }-->
+
+<!--        label:hover {-->
+<!--            background-color: #007bff;-->
+<!--        }-->
+
+<!--        input[type="text"] {-->
+<!--            padding: 12px;-->
+<!--            margin: 10px;-->
+<!--            border: 1px solid #ccc;-->
+<!--            border-radius: 5px;-->
+<!--            transition: border-color 0.3s ease;-->
+<!--            width: 80%;-->
+<!--            max-width: 400px;-->
+<!--            text-align: center;-->
+<!--        }-->
+
+<!--        input[type="text"]:focus {-->
+<!--            border-color: #007bff;-->
+<!--            outline: none;-->
+<!--        }-->
+
+<!--        input[type="submit"] {-->
+<!--            padding: 12px 24px;-->
+<!--            background-color: #007bff;-->
+<!--            color: white;-->
+<!--            border: none;-->
+<!--            border-radius: 5px;-->
+<!--            cursor: pointer;-->
+<!--            transition: background-color 0.3s ease;-->
+<!--            width: 50%;-->
+<!--            max-width: 200px;-->
+<!--        }-->
+
+<!--        input[type="submit"]:hover {-->
+<!--            background-color: #0056b3;-->
+<!--        }-->
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div id="container">-->
+<!--    <h1>Intrusion Alert</h1>-->
+<!--    <p>Alert ID: <span id="alert_id">{{ alert_id }}</span></p>-->
+<!--    <video width="480" height="360" controls id="video_display">-->
+<!--        <source src="{{ url_for('serve_video', filename='test_video.mp4') }}" type="video/mp4">-->
+<!--        Your browser does not support the video tag.-->
+<!--    </video>-->
+<!--    <p>Intrusion: <span id="intrusion_result">{{ intrusion_result }}</span></p>-->
+
+<!--    &lt;!&ndash; User interaction options &ndash;&gt;-->
+<!--    <form id="user_interaction_form" action="/process_choice" method="post">-->
+<!--&lt;!&ndash;        <input type="hidden" name="alert_id" id="alert_id_field" value="{{ alert_id }}">&ndash;&gt;-->
+<!--        <label for="suppress" id="suppress_label" style="background-color: #ff6347; border: 1px solid #e54d42;">Suppress Alert</label>-->
+<!--        <input type="text" name="person_name" placeholder="Type Your Name Here">-->
+<!--        <label for="message" id="message_label" style="background-color: #32cd32; border: 1px solid #2eb82e;">Call 911</label>-->
+<!--        <input type="submit" value="Submit">-->
+<!--    </form>-->
+<!--</div>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IoT Surveillance System</title>
+</head>
+<body>
+    <h1>Motion Alert</h1>
+    <p>Alert ID: <span id="alert_id">{{ alert_id }}</span></p>
+    <video width="320" height="240" controls id="video_display">
+        <source src="{{ url_for('serve_video', filename='test_video.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+    <p>Intrusion: <span id="intrusion_result">{{ intrusion_result }}</span></p>
+
+    <!-- User interaction options -->
+    <form id="user_interaction_form" action="/suppress-alert" method="post">
+        <input type="hidden" name="alert_id" id="alert_id_field" value="{{ alert_id }}">
+        <input type="radio" name="choice" value="suppress"> Suppress Alert
+        <input type="text" name="person_name" placeholder="Name">
+        <br>
+        <input type="radio" name="choice" value="message"> Send Message to User<br>
+        <input type="submit" value="Submit">
+    </form>
+</body>
+</html>

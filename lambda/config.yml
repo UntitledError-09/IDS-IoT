@@ -1,0 +1,5 @@
+mongo_uri: "mongodb+srv://lambda-user:LambdaUser123@csc591-iot-project.ubjtzcb.mongodb.net/main_db?retryWrites=true&w=majority"
+aws_access_key_id: "AKIA5HRL2FSECNHDOSGJ"
+aws_secret_access_key: "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"
+aws_region: "us-east-1"
+mail_username: "harishrohank2@gmail.com"
