@@ -1,6 +1,6 @@
 import base64
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from bson import json_util
 from flask_pymongo import PyMongo
 import boto3
@@ -23,6 +23,12 @@ aws_region = config['aws_region']
 
 
 # Routes
+
+@app.route('/', methods=['GET'])
+def index_route():
+    return render_template('index.html')
+
+
 @app.route('/latest_activity', methods=['POST', 'GET'])
 def latest_activity():
     if request.method == 'POST':
@@ -45,7 +51,8 @@ def latest_activity():
         latest_activity_log = mongo.db.latest_activity.find_one({'email': email}, sort=[('_id', -1)])
         if latest_activity_log:
             return jsonify(
-                {'activity_id': latest_activity_log['activity_id'], 'video': latest_activity_log['video'], 'timestamp': latest_activity_log['timestamp']}), 200
+                {'activity_id': latest_activity_log['activity_id'], 'video': latest_activity_log['video'],
+                 'timestamp': latest_activity_log['timestamp']}), 200
         else:
             return jsonify({'message': 'No activity found for the specified email'}), 404
 
@@ -88,4 +95,4 @@ def send_email():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=8080)

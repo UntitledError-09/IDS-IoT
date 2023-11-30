@@ -1,10 +1,8 @@
 cloud_endpoint: https://2rpidq7sw3m6t7ezz5dxgobqze0zemmh.lambda-url.us-east-1.on.aws/
 
 broker:
-  hostname: localhost # WARNING: ephemeral
+  hostname: localhost
   port: 1883
 
 topics:
   rpi_to_user: 'rpi_to_user'
-
-#secrets_file: 'secrets.yml'
