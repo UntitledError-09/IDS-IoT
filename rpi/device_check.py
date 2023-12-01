@@ -3,10 +3,11 @@ from rpi import User
 import subprocess
 import time
 
-registered_devices = User.query.with_entities(User.mac_address).all()
+# registered_devices = User.query.with_entities(User.mac_address).all()
+registered_devices = ['9c:3e:53:81:e0:60', '9c:3e:53:87:37:a2']
 
 # Extract the mac_addresses into a list
-mac_addresses = [device[0] for device in registered_devices]
+# mac_addresses = [device[0] for device in registered_devices]
 alarm_triggered = False
 
 def get_connected_devices():
@@ -30,7 +31,6 @@ def get_connected_devices():
         raise OSError(f"Required command not found: {e}")
 
 
-
 def check_registered_devices():
     global alarm_triggered
     connected_devices = get_connected_devices()
@@ -42,7 +42,6 @@ def check_registered_devices():
     else:
         if alarm_triggered:
             alarm_triggered = False
-
 
 def periodic_device_check():
     connected_devices = get_connected_devices()
