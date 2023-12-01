@@ -1,5 +1,6 @@
+import threading
+
 import schedule
-from rpi import User
 import subprocess
 import time
 
@@ -9,6 +10,7 @@ registered_devices = ['9c:3e:53:81:e0:60', '9c:3e:53:87:37:a2']
 # Extract the mac_addresses into a list
 # mac_addresses = [device[0] for device in registered_devices]
 alarm_triggered = False
+
 
 def get_connected_devices():
     try:
@@ -43,13 +45,19 @@ def check_registered_devices():
         if alarm_triggered:
             alarm_triggered = False
 
+
 def periodic_device_check():
     connected_devices = get_connected_devices()
     check_registered_devices(connected_devices)
 
-schedule.every(30).seconds.do(periodic_device_check)
 
-# Run the scheduled job indefinitely
-while True:
-    schedule.run_pending()
-    time.sleep(1)
+def schd_fn():
+    schedule.every(30).seconds.do(periodic_device_check)
+
+    # Run the scheduled job indefinitely
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+
+schd_thd = threading.Thread(None, schd_fn, "device_check_scheduler", daemon=True)
