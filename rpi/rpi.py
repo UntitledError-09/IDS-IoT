@@ -2,7 +2,7 @@ import base64
 from flask import Flask, render_template, request, Response, send_from_directory
 import paho.mqtt.client as mqtt
 from flask_sqlalchemy import SQLAlchemy
-# from connected_devices import get_connected_devices, check_registered_devices
+from device_check import get_connected_devices, check_registered_devices
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import yaml
@@ -142,6 +142,8 @@ def send_email_and_update_cloud(subject, body, upload_payload):
 
 
 def save_video(video, timestamp, device_name):
+    global latest_filename
+    global latest_path
     # Generate activity_id
     activity_id = f'{datetime.now().strftime("%Y%m%d_%H%M%S")}-{device_name}'
     logger.debug(f'{device_name},{activity_id},video_size:{len(video)}')
@@ -154,6 +156,9 @@ def save_video(video, timestamp, device_name):
     filename = f"{timestamp}-{device_name}.mp4"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
+    latest_filename = filename
+    latest_path = filepath
+
     with open(filepath, 'wb') as file:
         file.write(video_data)
 
@@ -162,54 +167,6 @@ def save_video(video, timestamp, device_name):
     db.session.commit()
 
     return activity_id
-
-
-registered_devices = User.query.with_entities(User.mac_address).all()
-
-# Extract the mac_addresses into a list
-mac_addresses = [device[0] for device in registered_devices]
-alarm_triggered = False
-
-def get_connected_devices():
-    try:
-        output = subprocess.check_output(["arp", "-a"])
-        output_lines = output.decode().split("\n")
-
-        devices = []
-
-        for line in output_lines:
-            line_parts = line.split()
-            if len(line_parts) >= 4:
-                mac_address = line_parts[3]
-                devices.append(mac_address)
-
-        return devices
-
-    except subprocess.CalledProcessError as e:
-        raise OSError(f"Command execution failed: {e}")
-    except FileNotFoundError as e:
-        raise OSError(f"Required command not found: {e}")
-
-
-
-def check_registered_devices():
-    global alarm_triggered
-    connected_devices = get_connected_devices()
-    unregistered_devices = [device for device in connected_devices if device not in registered_devices]
-
-    if unregistered_devices:
-        alarm_triggered = True
-
-    else:
-        if alarm_triggered:
-            alarm_triggered = False
-
-schedule.every(30).seconds.do(check_registered_devices)
-
-# Run the scheduled job indefinitely
-while True:
-    schedule.run_pending()
-    time.sleep(1)
 
 def intrusion_detection(payload: dict):
     # TODO: Wifi-based detection
@@ -252,9 +209,12 @@ client.subscribe(topic)
 client.loop_start()
 
 # routes
-@app.route('/video/<path:filename>')
-def serve_video(filename, message):
-    return send_from_directory(received_data["video_url"])
+@app.route('/video')
+def serve_video():
+    global latest_filename
+    global latest_path
+
+    return send_from_directory(latest_path, latest_filename)
 # /Users/chetana/PycharmProjects/csc591-iot_project/rpi
 
 @app.route('/render_template_route')
