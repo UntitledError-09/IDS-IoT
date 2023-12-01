@@ -134,7 +134,8 @@
     <h1>Motion Alert</h1>
     <p>Alert ID: <span id="alert_id">{{ alert_id }}</span></p>
     <video width="320" height="240" controls id="video_display">
-        <source src="{{ url_for('serve_video', filename='test_video.mp4') }}" type="video/mp4">
+<!--        <source src="{{ url_for('serve_video', filename='test_video.mp4') }}" type="video/mp4">-->
+        <source src="{{ video_url }}" type="video/mp4">
         Your browser does not support the video tag.
     </video>
     <p>Intrusion: <span id="intrusion_result">{{ intrusion_result }}</span></p>

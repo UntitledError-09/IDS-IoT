@@ -2,7 +2,7 @@ import base64
 from flask import Flask, render_template, request, Response, send_from_directory
 import paho.mqtt.client as mqtt
 from flask_sqlalchemy import SQLAlchemy
-from connected_devices import get_connected_devices, check_registered_devices
+# from connected_devices import get_connected_devices, check_registered_devices
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import yaml
@@ -11,8 +11,10 @@ import logging
 from datetime import datetime
 import asyncio
 import requests
-
-from MQTT_Client import init_mqttc
+import subprocess
+import schedule
+import time
+# from MQTT_Client import init_mqttc
 
 # initializations
 
@@ -102,6 +104,17 @@ def on_message(client, userdata, message):
             "activity_id": activity_id
         })
 
+# def on_message(client, userdata, message):
+#     msg_payload = str(message.payload.decode("utf-8"))
+#     message_parts = msg_payload.split(',')
+#     print("Video URL :", message_parts[1])
+#     global received_data
+#     received_data["alert_id"] = message_parts[0]
+#     received_data["video_url"] = message_parts[1]
+#     received_data["intrusion_result"] = message_parts[2]
+#     # Redirect to a Flask route to render the template with the data
+#     redirect_to_render()
+
 
 def redirect_to_render():
     # Perform a redirect to a Flask route where the template will be rendered
@@ -151,6 +164,53 @@ def save_video(video, timestamp, device_name):
     return activity_id
 
 
+registered_devices = User.query.with_entities(User.mac_address).all()
+
+# Extract the mac_addresses into a list
+mac_addresses = [device[0] for device in registered_devices]
+alarm_triggered = False
+
+def get_connected_devices():
+    try:
+        output = subprocess.check_output(["arp", "-a"])
+        output_lines = output.decode().split("\n")
+
+        devices = []
+
+        for line in output_lines:
+            line_parts = line.split()
+            if len(line_parts) >= 4:
+                mac_address = line_parts[3]
+                devices.append(mac_address)
+
+        return devices
+
+    except subprocess.CalledProcessError as e:
+        raise OSError(f"Command execution failed: {e}")
+    except FileNotFoundError as e:
+        raise OSError(f"Required command not found: {e}")
+
+
+
+def check_registered_devices():
+    global alarm_triggered
+    connected_devices = get_connected_devices()
+    unregistered_devices = [device for device in connected_devices if device not in registered_devices]
+
+    if unregistered_devices:
+        alarm_triggered = True
+
+    else:
+        if alarm_triggered:
+            alarm_triggered = False
+
+schedule.every(30).seconds.do(check_registered_devices)
+
+# Run the scheduled job indefinitely
+while True:
+    schedule.run_pending()
+    time.sleep(1)
+
 def intrusion_detection(payload: dict):
     # TODO: Wifi-based detection
     wifi_check = 0.0
@@ -184,19 +244,18 @@ def intrusion_detection(payload: dict):
 # config['topics']['rpi_to_user']
 
 broker_address = "127.0.0.1"
-topic = "test_topic"
+topic = "rpi_to_user"
 
 client.on_message = on_message
 client.connect(broker_address)
 client.subscribe(topic)
 client.loop_start()
 
-
 # routes
 @app.route('/video/<path:filename>')
-def serve_video(filename):
-    return send_from_directory('/Users/chetana/PycharmProjects/WID_IoT/', filename)
-
+def serve_video(filename, message):
+    return send_from_directory(received_data["video_url"])
+# /Users/chetana/PycharmProjects/csc591-iot_project/rpi
 
 @app.route('/render_template_route')
 def render_template_route():
@@ -204,7 +263,6 @@ def render_template_route():
     return render_template('index.html', alert_id=received_data["alert_id"],
                            video_url=received_data["video_url"],
                            intrusion_result=received_data["intrusion_result"])
-
 
 @app.post('/activity-detected')
 # handle POST from ESP32-CAM
@@ -230,21 +288,35 @@ def handle_activity_detected():
     return Response(f"{activity_id}", 201)
 
 
-@app.post('/suppress-alert')
-# handle POST from user
-# request body: {activity_id, suppress, suppressor_id}
-def suppress_alert():
-    data = request.json
+# @app.post('/suppress-alert')
+# # handle POST from user
+# # request body: {activity_id, suppress, suppressor_id}
+# def suppress_alert():
+#     data = request.json
+#
+#     activity_id = data.get('activity_id')
+#     suppress = data.get('suppress')
+#     suppressor_name = data.get('suppressor_name')
+#
+#     activity_log = ActivityLog.query.filter_by(id=activity_id).first()
+#     if suppress == 'true' or suppress == 'True' or suppress == True or suppress == 1:
+#         activity_log.suppressor_name = suppressor_name
+#         db.session.commit()
+#
+#     return Response("suppressed", 200)
 
-    activity_id = data.get('activity_id')
-    suppress = data.get('suppress')
-    suppressor_name = data.get('suppressor_name')
 
+@app.route('/suppress-alert', methods=['POST'])
+def process_choice():
+    choice = request.form['choice']
+    person_name = request.form.get('person_name', '')
+    activity_id = request.form.get('alert_id') # Get person's name from the form
     activity_log = ActivityLog.query.filter_by(id=activity_id).first()
-    if suppress == 'true' or suppress == 'True' or suppress == True or suppress == 1:
-        activity_log.suppressor_name = suppressor_name
+    if choice == 'true' or choice == 'True' or choice == True or choice == 1:
+        activity_log.suppressor_name = person_name
         db.session.commit()
 
+    print(f"Alert Id: {activity_id}. Choice sent to RPi: {choice}. Suppressed by: {person_name}")
     return Response("suppressed", 200)
 
 
