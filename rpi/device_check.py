@@ -1,8 +1,13 @@
 import threading
-
+import logging
 import schedule
 import subprocess
 import time
+
+logging.basicConfig(filename='logs/unregistered_devices.csv', format='%(asctime)s.%(msecs)03d,%(message)s',
+                    datefmt='%Y-%m-%d %H:%M:%S', filemode='w+')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 # registered_devices = User.query.with_entities(User.mac_address).all()
 registered_devices = ['9c:3e:53:81:e0:60', '9c:3e:53:87:37:a2']
@@ -41,8 +46,10 @@ def check_registered_devices():
     if unregistered_devices:
         alarm_triggered = True
         print("Unregistered devices detected:")
+        logger.debug('Unregistered Devices :')
         for device in unregistered_devices:
             print(device)
+            logger.debug(f'{device}')
 
     else:
         if alarm_triggered:
