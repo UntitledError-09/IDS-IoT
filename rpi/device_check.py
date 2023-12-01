@@ -40,10 +40,14 @@ def check_registered_devices():
 
     if unregistered_devices:
         alarm_triggered = True
+        print("Unregistered devices detected:")
+        for device in unregistered_devices:
+            print(device)
 
     else:
         if alarm_triggered:
             alarm_triggered = False
+
 
 
 def periodic_device_check():
