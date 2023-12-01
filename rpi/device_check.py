@@ -55,6 +55,8 @@ def check_registered_devices():
         if alarm_triggered:
             alarm_triggered = False
 
+    return alarm_triggered
+
 
 
 def periodic_device_check():
@@ -71,4 +73,4 @@ def schd_fn():
         time.sleep(1)
 
 
-schd_thd = threading.Thread(None, schd_fn, "device_check_scheduler", daemon=True)
+# schd_thd = threading.Thread(None, schd_fn, "device_check_scheduler", daemon=True)
