@@ -1,6 +1,8 @@
 import logging
 import time
 import yaml
+import json
+import base64
 import paho.mqtt.client as mqtt
 
 
@@ -16,8 +18,8 @@ with open('config.yml', 'r') as config_file:
 #     global secrets
 #     secrets = yaml.safe_load(secrets_file)
 
-BROKER_HOSTNAME = config['broker']['hostname']
-BROKER_PORT = config['broker']['port']
+BROKER_HOSTNAME = 'localhost'
+BROKER_PORT = 1883
 # CREDS = secrets['credentials']['mqtt_users'][0]
 AUTO_RECONNECT_DELAY = 20
 AUTO_RECONNECT_RETRIES = 100
@@ -69,10 +71,10 @@ def init_mqttc():
 
         client.kill_flag = True
 
-    client_inst = mqtt.Client(client_id='rpi')
+    client_inst = mqtt.Client(client_id='tester')
     client_inst.kill_flag = False
     client_inst.reconnect_flag = True
-    client_inst.enable_logger(logger=logging.Logger('rpi'))
+    client_inst.enable_logger(logger=logging.Logger('tester'))
     # client_inst.username_pw_set(username=CREDS['username'], password=CREDS['password'])
     # client_inst.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
     client_inst.on_connect = on_connect
@@ -97,7 +99,7 @@ def init_mqttc():
 
 
 m = init_mqttc()
-while True:
-    # m.publish('test', 'test')
-    time.sleep(1)
 
+with open("test_video.mp4", "rb") as f:
+    temp = m.publish("activity_detected", json.dumps({"video": base64.b64encode(f.read()).decode("utf-8"), "timestamp": 123, "device_name": "abc"}), 0)
+    temp.wait_for_publish()
