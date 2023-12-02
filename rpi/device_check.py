@@ -50,6 +50,8 @@ def check_registered_devices():
         for device in unregistered_devices:
             print(device)
             logger.debug(f'{device}')
+        
+        
 
     else:
         if alarm_triggered:

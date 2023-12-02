@@ -1,5 +1,5 @@
 import base64
-from flask import Flask, render_template, request, Response, send_from_directory, jsonify
+from flask import Flask, render_template, request, Response, send_file, jsonify
 import paho.mqtt.client as mqtt
 from flask_sqlalchemy import SQLAlchemy
 from device_check import get_connected_devices, check_registered_devices
@@ -9,6 +9,7 @@ import json
 import logging
 from datetime import datetime
 import requests
+from face_recog import face_recog
 
 # Initializations
 
@@ -90,6 +91,7 @@ def on_message(_mqtt_client, userdata, message):
         message_parts = msg_payload.split(',')
         print("Video URL:", message_parts[1])
         global received_data
+        print("-------", received_data)
         received_data["alert_id"] = message_parts[0]
         received_data["video_url"] = message_parts[1]
         received_data["intrusion_result"] = message_parts[2]
@@ -113,8 +115,10 @@ def on_message(_mqtt_client, userdata, message):
 
 
 def send_email_and_update_cloud(subject, body, upload_payload):
-    requests.post(url=config['cloud_endpoint'] + "latest_activity", json=upload_payload)
-    return requests.post(url=config['cloud_endpoint'] + "send_email", json={"subject": subject, "body": body})
+    temp1 = requests.post(url=config['cloud_endpoint'] + "latest_activity", json=upload_payload)
+    temp2 = requests.post(url=config['cloud_endpoint'] + "send_email", json={"to_email": "harishrohank2@gmail.com", "subject": subject, "body": body})
+    print(temp1, temp2)
+    return None
 
 
 def save_video(video, timestamp, device_name):
@@ -134,6 +138,8 @@ def save_video(video, timestamp, device_name):
 
     latest_filename = filename
     latest_path = filepath
+    
+    print(latest_filename, latest_path)
 
     with open(filepath, 'wb') as file:
         file.write(video_data)
@@ -156,12 +162,15 @@ def intrusion_detection(payload: dict):
         wifi_check = 1.0
 
     # TODO: ML-based face/posture detection
-    face_check = 1.0  # UPDATE THIS!
+    face_check = face_recog()  # UPDATE THIS!
+    #print("face check is:",face_check)
+    
 
     # TODO: Get weighted result and alert user
     detection_result = (0.75 * wifi_check) + (0.25 * face_check)  # UPDATE THIS!
 
     logger.info(f'{payload["activity_id"]},detection_result:{detection_result}')
+    print(f'{payload["activity_id"]},detection_result:{detection_result}')
 
     # Save detection result to db
     with app.app_context():
@@ -169,19 +178,20 @@ def intrusion_detection(payload: dict):
         activity_log.detection_result = detection_result
         db.session.commit()
         activity_id = payload["activity_id"]
-        if detection_result > 0.75:
-            # Publish detection result to user
-            mqtt_client.publish(topic="rpi_to_user", payload=json.dumps(payload), qos=2, retain=True)
-            send_email_and_update_cloud("Site Activity Alert",
+        # Publish detection result to user
+        received_data['alert_id'] = payload["activity_id"]
+        received_data['video_url'] = latest_path
+        received_data['intrusion_result'] = detection_result
+        send_email_and_update_cloud("Site Activity Alert",
                                         f"Possible intrusion detected at your site. {activity_id} at {activity_log.timestamp} with {activity_log.detection_result} certainty.",
                                         payload)
 
 
 mqtt_client.on_message = on_message
 mqtt_client.on_connect = on_connect
-mqtt_client.connect("127.0.0.1")
-mqtt_client.subscribe([("rpi_to_user", 0), ("activity_detected", 0)])
-mqtt_client.loop_start()
+#mqtt_client.connect("127.0.0.1")
+#mqtt_client.subscribe([("rpi_to_user", 0), ("activity_detected", 0)])
+#mqtt_client.loop_start()
 
 
 # Routes
@@ -189,16 +199,36 @@ mqtt_client.loop_start()
 def serve_video():
     global latest_filename
     global latest_path
+    #print(latest_path)
+    if latest_path:
+        return send_file(latest_path)
+    else:
+        return "none"
 
-    return send_from_directory(latest_path, latest_filename)
+
+@app.route('/away/<flag>')
+def away_route(flag):
+    away_flag = flag
+    if away_flag == 'true':
+        print("*****************************")
+        print("Away from Home mode activated")
+        print("*****************************")
+        return jsonify({"message": "Away from Home mode activated"})
+    else:
+        print("*******************************")
+        print("Away from Home mode deactivated")
+        print("*******************************")
+        return jsonify({"message": "Away from Home mode deactivated"})
+    
 
 
 # /Users/chetana/PycharmProjects/csc591-iot_project/rpi
 @app.route('/render_template_route')
 def render_template_route():
     global received_data
+    print(received_data)
     return render_template('index.html', alert_id=received_data["alert_id"],
-                           video_url=received_data["video_url"],
+                           video_url=latest_path,
                            intrusion_result=received_data["intrusion_result"])
 
 
@@ -206,7 +236,7 @@ def render_template_route():
 # Handle POST from ESP32-CAM
 # Request body: {video: base64.b64encode, timestamp: str, device_name: str}
 def handle_activity_detected():
-    data = request.json
+    data = json.loads(request.json)
 
     video = data.get('video')
     timestamp = data.get('timestamp')

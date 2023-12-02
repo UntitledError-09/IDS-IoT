@@ -1,5 +1,4 @@
-cloud_endpoint: https://2rpidq7sw3m6t7ezz5dxgobqze0zemmh.lambda-url.us-east-1.on.aws/
-
+cloud_endpoint: https://h76fc3m9k5.execute-api.us-east-1.amazonaws.com/dev/
 broker:
   hostname: localhost
   port: 1883
