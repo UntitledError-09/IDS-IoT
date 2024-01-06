@@ -4,6 +4,12 @@
 
 This repository contains a Python application for an Intrusion Detection System (IDS) with MQTT integration. The system is designed to detect potential intrusions at a site by combining WiFi-based detection and Machine Learning-based face/posture detection.
 
+### Contributors
+- Harish Rohan Kambhampaty
+- Aboli Kulkarni
+- Chunduru Chetana
+- Shameek Khadilkar
+
 ### Features
 
 - **MQTT Integration:** The application uses the MQTT protocol for communication between the Raspberry Pi (RPi) and the user interface.
@@ -82,3 +88,13 @@ This repository contains a Python application for an Intrusion Detection System 
 5. Visit http://<device-ip>:8080/render_template_route in your web browser to access the home page.
 
 Feel free to enhance and adapt the system based on your specific needs. If you encounter any issues or have suggestions for improvements, please raise an issue or contribute to the project.
+
+# License
+
+Copyright (c) 2024 Harish Rohan Kambhampaty, Aboli Kulkarni, Chunduru Chetana, Shameek Khadilkar
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
