@@ -4,11 +4,7 @@
 
 This repository contains a Python application for an Intrusion Detection System (IDS) with MQTT integration. The system is designed to detect potential intrusions at a site by combining WiFi-based detection and Machine Learning-based face/posture detection.
 
-### Contributors
-- Harish Rohan Kambhampaty
-- Aboli Kulkarni
-- Chunduru Chetana
-- Shameek Khadilkar
+![Architecture Diagram](./project-architecture.drawio.png)
 
 ### Features
 
@@ -88,6 +84,12 @@ This repository contains a Python application for an Intrusion Detection System 
 5. Visit http://<device-ip>:8080/render_template_route in your web browser to access the home page.
 
 Feel free to enhance and adapt the system based on your specific needs. If you encounter any issues or have suggestions for improvements, please raise an issue or contribute to the project.
+
+### Contributors
+- Harish Rohan Kambhampaty
+- Aboli Kulkarni
+- Chunduru Chetana
+- Shameek Khadilkar
 
 # License
 
